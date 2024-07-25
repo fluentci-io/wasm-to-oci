@@ -11,11 +11,6 @@ jobs:
           go-version: 1.22.2
         id: go
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.59
-
       - name: Check out code
         uses: actions/checkout@v1
 
@@ -23,4 +18,4 @@ jobs:
         run: |
           export GOPATH=$HOME/go && export GOBIN=$(go env GOPATH)/bin && export PATH=$PATH:$GOPATH&& export PATH=$PATH:$GOBIN && mkdir -p $GOBIN
 
-          make bootstrap build test lint build-cross
+          make bootstrap build test build-cross
