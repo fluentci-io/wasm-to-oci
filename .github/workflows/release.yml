@@ -1,0 +1,48 @@
+name: GitHub Actions
+on:
+  release:
+    types: [created]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - darwin-amd64
+          - darwin-arm64
+          - linux-arm64
+          - linux-amd64
+          - windows-amd64
+    steps:
+      - name: Set up Go 1.22.2
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.22.2
+        id: go
+
+      - name: Check out code
+        uses: actions/checkout@v1
+
+      - name: Build, Test, Lint
+        run: |
+          export GOPATH=$HOME/go && export GOBIN=$(go env GOPATH)/bin && export PATH=$PATH:$GOPATH&& export PATH=$PATH:$GOBIN && mkdir -p $GOBIN
+
+          make bootstrap build test build-cross
+      - name: Generate *.tar.gz
+        run: |
+          tar czvf wasm-to-oci_${{ matrix.target }}.tar.gz wasm-to-oci*
+        working-directory: bin/${{ matrix.target }}
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Upload assets
+        uses: fluentci-io/setup-fluentci@v5
+        with:
+          wasm: true
+          plugin: github
+          args: |
+            release_upload $TAG $FILE
+        env:
+          TAG: ${{ env.RELEASE_VERSION }}
+          FILE: bin/${{ matrix.target }}/wasm-to-oci_${{ matrix.target }}.tar.gz
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
